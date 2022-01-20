@@ -18,7 +18,7 @@ const HomePage = () => {
                         {user.content}
                     </Typography>
                 </div>
-                <Typography dangerouslySetInnerHTML={{ __html: product.description }} variant="body2" color="textSecondary" component="p" />
+                <Typography dangerouslySetInnerHTML={{ __html: user.description }} variant="body2" color="textSecondary" component="p" />
             </CardContent>
             <CardActions disableSpacing className={classes.cardActions}>
                 <IconButton aria-label="Logout" onClick={Login}>
