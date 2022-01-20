@@ -13,24 +13,22 @@ var defaultApp = admin.initializeApp({
 
 console.log(defaultApp);
 /* GET users listing. */
-router.get("/create", function (req, res, next) {
-  console.log("working");
+router.get("/create", async function (req, res, next) {
   console.log(req);
+
   console.log(req.body.email);
   console.log(req.body.password);
   var email = req.body.email;
   var password = req.body.password;
-  if (req.body.email & req.body.password) {
-    admin
-      .auth()
-      .createUserWithEmailAndPassword(email, password)
-      .catch(function (error) {
-        var errorCode = error.code;
-        var errorMessage = error.message;
-        console.log("ERROR");
-        console.log(errorCode, errorMessage);
-      });
-    res.send("User is created!");
+  if (email && password) {
+    console.log("test");
+    var user = await admin.auth().createUser({
+      email,
+      password,
+    });
+
+    console.log(user);
+    return res.send(user);
   } else {
     res.send("Problem with creating user!");
   }
