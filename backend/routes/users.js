@@ -1,32 +1,36 @@
 var express = require("express");
 var router = express.Router();
-
 const admin = require("firebase-admin");
 
 const serviceAccount = require("../service-account-file.json");
 
-var defaultApp = admin.initializeApp({
+var firebase = admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL:
     "https://tt3-7-30668-default-rtdb.asia-southeast1.firebasedatabase.app/",
 });
 
-console.log(defaultApp);
-/* GET users listing. */
-router.get("/create", async function (req, res, next) {
-  console.log(req);
+var firestore = firebase.firestore();
+var db = admin.database();
 
-  console.log(req.body.email);
-  console.log(req.body.password);
+//Create user
+router.get("/create", async function (req, res, next) {
   var email = req.body.email;
   var password = req.body.password;
+  var data = req.body;
   if (email && password) {
-    console.log("test");
-    var user = await admin.auth().createUser({
-      email,
-      password,
-    });
+    var user = await admin
+      .auth()
+      .createUser({
+        email,
+        password,
+      })
+      .catch((error) => {
+        res.status(400).send("Error creating user:" + error);
+      });
 
+    var write = await firestore.collection("users").doc().set(data);
+    console.log(write);
     console.log(user);
     return res.send(user);
   } else {
@@ -34,38 +38,37 @@ router.get("/create", async function (req, res, next) {
   }
 });
 
-// createUserWithEmailAndPassword(auth, email, password)
-//   .then((userCredential) => {
-//     const user = userCredential.user;
-//     return user;
-//   })
-//   .catch((error) => {
-//     const errorCode = error.code;
-//     const errorMessage = error.message;
-//     return errorCode + errorMessage;
-//   });
-
-// signInWithEmailAndPassword(auth, email, password)
-//   .then((userCredential) => {
-//     // Signed in
-//     const user = userCredential.user;
-//     // ...
-//   })
-//   .catch((error) => {
-//     const errorCode = error.code;
-//     const errorMessage = error.message;
-//   });
-
-// onAuthStateChanged(auth, (user) => {
-//   if (user) {
-//     // User is signed in, see docs for a list of available properties
-//     // https://firebase.google.com/docs/reference/js/firebase.User
-//     const uid = user.uid;
-//     // ...
-//   } else {
-//     // User is signed out
-//     // ...
-//   }
-// });
+//Sign in user
+router.get("/login", async function (req, res, next) {
+  var email = req.body.email.toString();
+  var password = req.body.password.toString();
+  if (email && password) {
+    var user = await admin
+      .auth()
+      .getUserByEmail(String(email))
+      .then((userRecord) => {
+        var userUid = userRecord.uid;
+        var token = admin
+          .auth()
+          .createCustomToken(userUid)
+          .then((customToken) => {
+            // Send token back to client
+            res.status(200).send({
+              token: "Bearer " + customToken,
+              tokenValidThrough: userRecord.tokensValidAfterTime,
+            });
+          })
+          .catch((error) => {
+            console.log("Error creating custom token:", error);
+          });
+      })
+      .catch((error) => {
+        console.log(error);
+        return res.status(400).send("Error: user not found");
+      });
+  } else {
+    res.send("Please specify email & password to login!");
+  }
+});
 
 module.exports = router;
